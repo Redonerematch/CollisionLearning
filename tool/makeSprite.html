@@ -1,0 +1,83 @@
+<html>
+<head>
+<script type="text/javascript">
+    window.addEventListener('load',loadItems,false);
+    function loadItems(){
+        var btnLoad = document.forms['props'].elements['loadAll'];
+        var btnOutput = document.forms['props'].elements['output'];
+        var canvas = document.getElementById('renban');
+        var ctx = canvas.getContext('2d');
+        btnLoad.addEventListener('click', loadImgs, false);
+        btnOutput.addEventListener('click', renban, false);
+
+        var i = j = 0
+        var txt = document.getElementById('loading');
+        var img_num = 0;
+        var img_ext;
+        var img_ar = [];
+        function loadImgs(){
+            img_num = document.forms['props'].elements['sprite_num'].value;
+            for(var i=0;i<2;i++){
+                if(document.forms['props'].elements[i].checked){
+                    img_ext = '.' + document.forms['props'].elements[i].value;
+                }
+            }
+            (function(){
+                if(j<img_num){
+                    img_ar[j] = new Image();
+                    img_ar[j].onload = arguments.callee;
+                    if(j < 10){
+                        img_ar[j].src = 'gif/0000' + j + img_ext;
+                    }else {
+                        img_ar[j].src = 'gif/000' + j + img_ext;
+                    }
+                    txt.innerHTML = j + '枚目の画像を読み込み中';
+                    console.log(j + '枚目の画像を読み込み中')
+                    j++;
+                }else {
+                    txt.innerHTML = '読み込み完了';
+                }
+            })();
+        }
+        function renban(){
+            var img_width =document.forms['props'].elements['sprite_width'].value;
+            var img_height = document.forms['props'].elements['sprite_height'].value;
+            canvas.width = img_width;
+            canvas.height = img_height*img_num;
+            var img_ar = [];
+            for(var i=0;i<16; i++){
+                img_ar[i] = new Image();
+                if(i < 10){
+                    img_ar[i].src = 'gif/0000' + i + img_ext;
+                }else {
+                    img_ar[i].src = 'gif/000' + i + img_ext;
+                }
+            }
+            //キャンバスに出力
+            var x = 0;
+            var y = img_height;
+            console.log(img_ar)
+            for(var i=0;i<img_ar.length;i++){
+                ctx.drawImage(img_ar[i], x, y*i, img_width, img_height);
+            console.log(i)
+            }
+        }
+    }
+</script>
+</head>
+<body>
+<h2></h2>
+<canvas id="renban" width = "0px" height="0px"></canvas>
+<p id='loading'>読み込み中…</p>
+<form name='props'>
+    <p>画像形式</p>
+    <p><input type='checkbox' value='bmp' name='bmp'>bmp</p>
+    <p><input type='checkbox' value='png' name='png'>png</p>
+    <p>枚数<input type='text' name='sprite_num'></p>
+    <p><input type='button' value='読み込み' name='loadAll'></p>
+    <p>幅<input type='text' name='sprite_width'></p>
+    <p>高さ<input type='text' name='sprite_height'></p>
+    <p><input type='button' value='出力' name='output'></p>
+</form>
+</body>
+</html>

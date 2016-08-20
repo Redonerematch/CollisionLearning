@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html" charset="utf-8"> 
+<title>csvTojson</title>
+<style type="text/css">
+#zone{
+  width:500px;
+/*  height:70px; */
+  background-color:#eee;
+  border:3px dotted #ccc;
+}
+
+#zone p {
+  color:#555;
+  font-size:20px;
+  font-weight:lighter;
+  font-family:Impact, sans-serif;
+  text-align:center;
+  vertical-align:middle;
+}
+
+output {
+  list-style-type:square;
+  font-weight:lighter;
+  font-size:10px;
+}
+</style>
+<script type="text/javascript">
+function doScripts(){
+  if(window.File&&window.FileReader&&window.FileList&&window.Blob){
+    var frmFile = document.getElementById('zone')
+    frmFile.addEventListener('dragover',handleDragOver, false);
+    frmFile.addEventListener('drop',handleFileSelect,false);
+    var frmButton = document.frm.sa;
+    frmButton.addEventListener('click',selectAll,false);
+  }else {
+    alert("omg! file API is NOT supported in ur browser!")
+  }
+}
+
+function selectAll(){
+  var sNode = document.getElementById("json");
+  window.getSelection().selectAllChildren(sNode);
+}
+
+function handleFileSelect(evt){
+  evt.stopPropagation();
+  evt.preventDefault();
+  var files = evt.dataTransfer.files;
+  
+  var output = [];
+  for(var i=0,f; f=files[i];i++){
+    output.push('<li><strong>',f.name,'<strong>(',f.type||'n/a',') - ',
+    f.size,'bytes, last modified:',f.lastModifiedDate.toLocaleDateString(), '</li>');
+    var ext = f.name.split(".").pop();
+    var type = f.type;
+    if(!ext.match('csv')&&type.match('*./vnd.ms-excel')){
+      continue;
+    }
+    
+    var reader = new FileReader();
+    
+    reader.onload = (function(theFile){
+      return function(e){
+        
+        wholeText = e.target.result;
+        sepText = wholeText.split("\n");
+        var result = "";
+        for(var i=0;i<sepText.length-1;i++){
+          if(i!=sepText.length-2){
+            var encText = '[' + sepText[i] + '],<br>';
+          }else {
+            var encText = '[' + sepText[i] + ']';
+          }
+          result += encText;
+        }
+        var div = document.getElementById("json");
+        if(div!=null)div.parentNode.removeChild(div);
+        var div = document.createElement("div");
+        div.setAttribute("id", "json");
+        div.innerHTML = result;
+        
+        var fNode = document.getElementById("resTitle");
+        fNode.parentNode.insertBefore(div, fNode.nextSibling);
+      };
+    })(f);
+    
+    reader.readAsText(f);
+  }
+  document.getElementById('list').innerHTML = '<ul>' + output.join('') + '</ul>';
+}
+function handleDragOver(evt){
+  evt.stopPropagation();
+  evt.preventDefault();
+  evt.dataTransfer.effect = 'copy';
+}
+</script>
+</head>
+<body onload="doScripts()">
+<h1>convert csv to json</h1>
+<div id="zone">
+  <p>You can drop csv files</p>
+  <output id="list"></output>
+</div>
+<form name="frm">
+  <input type="button" id="selectAll" value="selectAll" name="sa"/>
+</form>
+<h2 id="resTitle">converted result</h2>
+</body>
+</html>

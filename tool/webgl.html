@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style type = "text/css">
+  canvas{
+    image-rendering: pixelated;
+    image-rendering:-moz-crisp-edges;
+    -ms-interpolation-mode:nearest-neighbor;
+  }
+</style>
+<title>webgl</title>
+<script type="text/javascript">
+var gl;
+
+function start(){
+  var canvas = document.getElementById('glcanvas');
+  gl = initWebGL(canvas);
+  
+  gl.clearColor(0.0,0.0,0.0,1.0);
+  gl.enable(gl.DEPTH_TEST);
+  gl.depthFunc(gl.LEQUAL);
+  gl.clear(gl.COLOR_BUFFER_BIT,gl.DEPTH_BUFFER_BIT);
+}
+
+function initWebGL(canvas){
+  gl = null;
+  
+  try{
+    gl = canvas.getContext('webgl')||canvas.getContext('experimantal-webgl');
+  }catch(e){
+    alert("webGLを初期化できません。");
+    gl = null;
+  }
+  return gl;
+}
+
+function initShaders(){
+  var fragmentShader = getShader(gl, "shader-fs");
+  var vertexShader = getShader(gl, "shader-vs");
+  
+  shaderProgram = gl.createProgram();
+  gl.attachShader(shaderProgram, vertexShader);
+  gl.attachShader(shaderProgram, fragmentShader);
+  gl.linkProgram(shaderProgram);
+  
+  if(!gl.getProgramParameter(shaderProgram,gl.LINK_STATUS)){
+    alert("シェーダ―プログラムを初期化できません。");
+  }
+  
+  gl.useProgram(shaderProgram);
+  
+  vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
+  gl.enableVertexAttribArray(VertexPositionAttribute);
+}
+
+function getShader(gl, id){
+  var shaderScript, theSource, currentChild, shader;
+  
+  shaderScript = document.getElementById(id);
+  if(!shaderScript){
+    return null;
+  }
+  
+  theSource = "";
+  currentChild = shaderScript.firstChild;
+  
+  while(currentChild){
+    if(currentChild.nodeType == currentChild.TEXT_NODE){
+      theSource += currentChild.textContent;
+    }
+    
+    currentChild = currentChild.nextSibling;
+  }
+  
+  if (shaderScript.type == "x-shader/x-fragment") {
+    shader = gl.createShader(gl.FRAGMENT_SHADER);
+  } else if (shaderScript.type == "x-shader/x-vertex") {
+    shader = gl.createShader(gl.VERTEX_SHADER);
+  } else {
+     // 未知のシェーダータイプ
+     return null;
+  }
+  gl.shaderSource(shader, theSource);
+    
+  // シェーダープログラムをコンパイル
+  gl.compileShader(shader);  
+    
+  // コンパイルが成功したかを確認
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {  
+      alert("シェーダーのコンパイルでエラーが発生しました: " + gl.getShaderInfoLog(shader));  
+      return null;  
+  }
+    
+  return shader;
+}
+}
+
+function resize(){
+  gl.viewport(0,0,canvas.width,canvas.height);
+}
+</script>
+</head>
+<body onload="start()">
+<canvas id="glcanvas" width="400" height="320">
+<div id="texts">
+  <p>webGLのテストです</p>
+</div>
+</body>
+</html>

@@ -1,0 +1,69 @@
+<html>
+<head>
+
+<style type = "text/css">
+  canvas{
+    image-rendering: pixelated;
+    image-rendering:-moz-crisp-edges;
+    -ms-interpolation-mode:nearest-neighbor;
+  }
+  #cmap {
+    visibility:hidden;
+  }
+  #bmap {
+    visibility:hidden;
+  }
+</style>
+	<script type="text/javascript">
+  window.addEventListener('load',loadImages,false);
+
+  function loadImages(){
+    var elm = document.getElementById('canvas');
+    var ctx = elm.getContext('2d');
+    var btn1 =document.forms["input"].elements["draw"];
+    var btn2 =document.forms["input"].elements["draw2"]
+    btn1.addEventListener('click',load,false);
+    btn2.addEventListener('click',fixImage,false);
+    var imgArray = [];
+    var img_num;
+
+    function load(){
+      img_num = document.forms["input"].elements["num"].value;
+      for(var i=0;i<img_num;i++){
+        imgArray[i] = new Image();
+        imgArray[i].src = 'gif/canvas' + i + '.png';
+      }
+      imgArray[img_num-1].onload = function(){
+        document.getElementById("explain").childNodes.item(0).nodeValue = "ロード完了";
+      }
+    }
+
+    function fixImage(){
+      var img_width = document.forms["input"].elements["width"].value;
+      var img_height = document.forms["input"].elements["height"].value;
+      elm.width = img_width*img_num*2;
+      elm.height = img_height;
+
+      for(var i=0;i<imgArray.length;i++){
+        ctx.drawImage(imgArray[i], img_width*(i*2), 0, img_width, img_height);
+        ctx.scale(-1,1);
+        ctx.drawImage(imgArray[i], img_width*-(i+i+2), 0, img_width, img_height);
+        ctx.scale(-1,1);
+      }
+    }
+  }
+  </script>
+</head>
+<body>
+<h2></h2>
+<canvas id="canvas"></canvas>
+<form name="input">
+  <p id="explain">待機中…</p>
+  <p>幅<input type="text" name="width"></p>
+  <p>高さ<input type="text" name="height"></p>
+  <p>枚数<input type="text" name="num"></p>
+  <p><input type="button" name="draw" value="ロード"></p>
+  <p><input type="button" name="draw2" value="描画！"></p>
+</form>
+</body>
+</html>

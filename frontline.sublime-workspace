@@ -1,0 +1,1040 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+		]
+	},
+	"buffers":
+	[
+		{
+			"contents": "var player = function(){\n     var keyPush,atkPush;\n     var rFlg;\n     this.chgDir;\n     this.name = \"player\";\n     this.pon = new point();\n     this.doHitCorrection = function(direction, amount, name){\n          if(name==\"map\"){\n               this.colMap[direction] = true;\n          }else if(name==\"box\"){\n               this.colObj[direction] = true;\n          }\n          switch(direction){\n               case \"bottom\":\n                    this.vy = 0;\n                    this.pon.y= Math.trunc((this.pon.y)/32)*32;\n               break;\n               case \"top\":\n                    this.vy = 0;\n                    this.pon.y += amount;\n               break;\n               case \"left\":\n                    if(name==\"map\"){\n                         //this.pon.x = Math.ceil((this.pon.x - this.vx0)/32)*32 - this.pon.ofx + 6;\n                         //this.pon.x = this.pon.lx;\n                    }else {\n                         this.pon.x -= amount;\n                    }\n               break;\n               case \"right\":\n                    if(name==\"map\"){\n                         //this.pon.x = Math.trunc((this.pon.x + this.vx0)/32)*32 + this.pon.ofx - 7;\n                         //this.pon.x = this.pon.lx;\n                    }else {\n                         this.pon.x -= amount;\n                    }\n               break;\n               case \"platform\":\n                    if(this.decFlg){\n                         this.colMap[direction] = false;\n                    }else {\n                         this.vy = 0;\n                         this.pon.y= Math.trunc((this.pon.y)/32)*32;\n                    }\n               break;\n          }\n     };\n\nthis.setPosFlg = function(FlgName){\n     this.posFlg = FlgName;\n};\nthis.setVX = function(dir){\n     if(this.state==\"push\"||this.state==\"ladder\"||this.posFlg==\"water\"){\n          this.vx = dir * this.vx0/2;\n     }else {\n          if(this.vx < this.vx0&this.vx > -this.vx0){\n               this.vx += dir*0.5;\n               this.chgDir = this.direct;\n          }else {\n               this.vx = dir * this.vx0;\n               if(this.chgDir!=this.direct)this.vx = 0;\n          }\n     }\n};\n  this.setIndex = function(){\n    switch(this.state){\n      case \"jump\":\n        if(this.vy >= 0){ //下降中\n          if(rFlg){\n            this.index++\n            if(this.index > 6)this.index = 7;\n          }else {\n            this.index = 7;\n          }\n        }else {\n          this.index = 0;\n          if(this.vy < -9)rFlg = true;\n        }\n      break;\n      case \"flat\":\n        if(time%4==0)this.index++;\n        rFlg = false;\n      break;\n      case \"attack_a\":\n        if(time%2==0)this.index++;\n      break;\n      case \"attack_b\":\n        if(time%2==0)this.index++;\n      break;\n      case \"attack_b_f\":\n        if(time%2==0)this.index++;\n      break\n      default:\n        if(time%3==0)this.index++;\n        rFlg = false;\n      break;\n    }\n    this.interval++;\n    if(this.index > 7)this.index = 0\n  };\n  this.getInfo = function(){\n    var InfoCluster = [];\n    infoCluster = {\"point\": this.pon, \"velocity\":[this.vx, this.vy], \"state\":this.state, \"pos\":this.posFlg, \"breath\":this.breath};\n    return infoCluster;\n  };\n  this.getEffectFlg = function(){\n    return this.eft;\n  };\n  this.resetState = function(){\n      this.wet = false;\n      this.posFlg = \"\";\n      this.colObj = [];\n      this.colMap = [];\n  };\n  this.setAttackState = function(statement, after){\n      var tmp = 1;\n      atkPush = true;\n      if(after==\"flat\"){\n           this.vx = 0;\n           tmp = 3;\n      }\n      this.interval = 0;\n      if(this.index == tmp){\n           if(!this.eft.flag)this.eft.init(statement)\n           atkPush = false;\n      }\n      if(this.index > 5)this.state = after;\n  }\n  this.setNormalState = function(){\n    if(isGround(this)){\n         if(this.state!=\"attack_a\"&&this.state!=\"attack_b\")this.state = \"flat\";\n         if(this.colObj.left|this.colObj.right){\n              this.state = \"push\";\n         }\n    }else {\n         if(this.state!=\"attack_b_f\"&&this.state!=\"damaged\")this.state = \"jump\";\n    }\n  };\n\n    this.setDamage = function(dmg, dir){\n\n        this.hp -= dmg;\n        this.inv = true;\n        if(dir==\"left\")this.vx = dmg;\n        else this.vx = -dmg;\n        if(this.invtime===0)this.vy = -5;\n        //this.deft.init(this.pon.x + this.w, this.pon.y - this.h, dir);\n    };\n\n    this.setDamaging = function(){\n      this.invtime++;\n      if(this.invtime > 30){\n        this.inv = false;\n        this.invtime = 0;\n        //this.state = \"jump\";\n      }else if(this.invtime < 10){\n        this.state = \"damaged\";\n      }\n    }\n}\n\nplayer.prototype.init = function(){\n  this.pon.x =1*32;\n  this.pon.y = 2*32;\n  this.w = 18; this.h = 28;\n  this.pon.ofx = 7;\n  this.pon.ofy = 36;\n  this.img = new sprite(ctx, \"saro.png\");\n  this.img.init(32,64,32,64);\n  this.weapon = new plWeapon();\n  this.weapon.init();\n  this.eft = new plEffect();\n  this.ptcl = [];\n  for(var i=0;i<PARTICLE_NUM;i++){\n     this.ptcl[i] = new particle();\n  }\n  this.vx = this.vy = 0;\n  this.vx0 = 5; this.vy0 =11; this.g = 1;\n  this.breath = 300;\n  this.index = 0;\n  this.state = \"wait\";\n  this.inv = false;\n  this.invtime = 0;\n  this.interval = 0;\n  this.ground = this.decFlg = false;\n  this.colObj = []; this.colMap = [];\n  this.direct = \"left\";\n  this.interval = 0;\n  rFlg  =  keyPush = atkPush = false;\n}\n\nplayer.prototype.update = function(){\n//---------------------------------基本動作------------------------------------------------------------------\n     if(isGround(this)){\n          if(this.colObj.left|this.colObj.right){\n               this.state = \"push\";\n          }\n     }else {\n          this.posFlg==\"water\"?this.vy += this.g/2: this.vy += this.g;\n     }\n\n     //-------------じゃんぷ------------------\n     if(keyFunc.detect(88)&&keyPush==false&&this.state!=\"attack_b_f\"&&this.state!=\"damaged\"){ //damagedはあとで除く\n          this.vy = -this.vy0;\n          keyPush = true;\n          this.index = 0;\n     }else if(!keyFunc.detect(88)){\n          keyPush = false;\n     }\n     //---------------降りる-------------------\n     if(keyFunc.detect(40)){\n          this.decFlg = true;\n          this.interval = 5;\n     }else {\n          if(this.interval > 10)this.decFlg = false;\n     }\n     //---------------------------地形ステート管理----------------------------------------------------------------\n     switch(this.posFlg){\n     case \"ladder\":\n          if(keyFunc.detect(38)){\n               this.state = \"ladder\";\n               this.vy = -this.vy0/5;\n          }else if(keyFunc.detect(40)){\n               this.state = \"ladder\";\n               this.vy = this.vy0/5;\n          }else {\n               if(this.state==\"ladder\"){\n                    this.vy = 0;\n                    if(keyFunc.detect(88)){\n                         this.state = \"jump\";\n                         this.vy = -this.vy0/2\n                    }\n               }else {\n                    this.setNormalState();\n               }\n          }\n     break;\n     case \"water\":\n          maxSpeed(this,2, 6);\n          this.setNormalState();\n          if(time%100==0){\n            for(var i=0;i<1;i++){\n                 if(!this.ptcl[i].flag)this.ptcl[i].init(this.pon.x, this.pon.y, \"air\");\n            }\n          }\n         if(this.breath==100){\n              for(var i=0;i<PARTICLE_NUM;i++){\n                   if(!this.ptcl[i].flag)this.ptcl[i].init(this.pon.x, this.pon.y, \"water\");\n              }\n         }\n          this.breath -= 1;\n     break;\n     default:\n          this.setNormalState();\n          maxSpeed(this,6, 12);\n          this.breath = 100;\n     break;\n     }\n\n    if(!atkPush){\n      switch(this.state){\n        case \"jump\":\n          switch(keyFunc.getCode()){\n          case 90:\n            if(this.interval > 10){\n              this.state = \"attack_b_f\";\n              this.index = 0;\n            }\n          break;\n          }\n        break;\n        case \"flat\":\n          switch(keyFunc.getCode()){\n          case 90:\n            if(this.interval > 6){\n              this.state = \"attack_a\";\n              this.index = 1;\n            }\n            break;\n          }\n        break;\n        case \"attack_a\":\n          if(this.index > 4&&keyFunc.getCode()==90){\n            this.index = 1;\n            this.state = \"attack_b\";\n          }\n        break;\n      }\n    }\n     //---------------------------------------横速度の設定-------------------------------------------\n\n    if(this.inv){\n      this.setDamaging();\n    }\n    if(this.state!=\"damaged\"){\n      if(keyFunc.detect(39)){\n        this.direct = \"right\";\n        this.setVX(1);\n      }else if(keyFunc.detect(37)){\n        this.direct = \"left\";\n        this.setVX(-1);\n      }else {\n        this.vx = 0;\n      }\n      switch(this.state){\n        case \"attack_a\":\n          this.setAttackState(this.state, \"flat\");\n        break;\n        case \"attack_b\":\n          this.setAttackState(this.state, \"flat\");\n        break;\n        case \"attack_b_f\":\n          this.setAttackState(this.state, \"jump\");\n        break;\n      }\n    }\n    this.pon.lx = this.pon.x;\n    this.pon.ly = this.pon.y;\n    this.pon.x += this.vx;\n    this.pon.x = Math.floor(this.pon.x);\n    this.pon.y += this.vy;\n\n    this.setIndex();\n\n    this.resetState();\n\n    if(this.eft.flag)this.eft.update(this.pon.x, this.pon.y, this.direct);\n    colVertical(this);\n\n    for(var i=0;i<PARTICLE_NUM;i++){\n      if(this.ptcl[i].flag)this.ptcl[i].update();\n    }\n}\n\nplayer.prototype.draw = function(ofx, ofy){\n  this.pon.ax = this.pon.x + ofx;\n  this.pon.ay = this.pon.y + ofy;\n  this.weapon.ax = this.pon.x - 16 + ofx;\n  this.weapon.ay = this.pon.y  + 12 + ofy;\n\n\n  switch(this.state){\n    case \"flat\":\n      if(this.direct==\"left\"){\n        if(this.vx < 0){\n          this.img.draw(this.pon.ax, this.pon.ay, 3, this.index);\n          this.weapon.draw(this.weapon.ax, this.weapon.ay, 3, this.index);\n        }else {\n          this.img.draw(this.pon.ax, this.pon.ay, 1, this.index);\n          this.weapon.draw(this.weapon.ax, this.weapon.ay, 1, this.index);\n        }\n      }else {\n        if(this.vx > 0){\n          this.img.draw(this.pon.ax, this.pon.ay, 2, this.index);\n          this.weapon.draw(this.weapon.ax, this.weapon.ay, 2, this.index);\n        }else {\n          this.img.draw(this.pon.ax, this.pon.ay, 0, this.index);\n          this.weapon.draw(this.weapon.ax, this.weapon.ay, 0, this.index);\n        }\n\n      }\n    break;\n    case \"jump\":\n      if(this.direct==\"left\"){\n        this.img.draw(this.pon.ax, this.pon.ay, 5, this.index);\n        this.weapon.draw(this.weapon.ax, this.weapon.ay, 5, this.index);\n      }else {\n        this.img.draw(this.pon.ax, this.pon.ay, 4, this.index);\n        this.weapon.draw(this.weapon.ax, this.weapon.ay, 4, this.index);\n      }\n    break;\n    case \"push\":\n      if(this.direct==\"left\"){\n        this.img.draw(this.pon.ax, this.pon.ay, 7, this.index);\n        this.weapon.draw(this.weapon.ax, this.weapon.ay, 7, this.index);\n      }else {\n        this.img.draw(this.pon.ax, this.pon.ay, 6, this.index);\n        this.weapon.draw(this.weapon.ax, this.weapon.ay, 6, this.index);\n      }\n    break;\n    case \"ladder\":\n      if(this.vy==0&&this.vx==0){\n        this.img.draw(this.pon.ax, this.pon.ay, 8, 0);\n        this.weapon.draw(this.weapon.ax, this.weapon.ay, 8, 0);\n      }else {\n        this.img.draw(this.pon.ax, this.pon.ay, 8, this.index);\n        this.weapon.draw(this.weapon.ax, this.weapon.ay, 8, this.index);\n      }\n    break;\n    case \"attack_a\":\n      if(this.direct==\"left\"){\n        this.img.draw(this.pon.ax, this.pon.ay, 11, this.index);\n        this.weapon.draw(this.weapon.ax, this.weapon.ay, 11, this.index);\n      }else {\n        this.img.draw(this.pon.ax, this.pon.ay, 10, this.index);\n        this.weapon.draw(this.weapon.ax, this.weapon.ay, 10, this.index);\n      }\n    break;\n    case \"attack_b\":\n      if(this.direct==\"left\"){\n        this.img.draw(this.pon.ax, this.pon.ay, 13, this.index);\n        if(this.index > 2){\n          this.weapon.ax = this.pon.x - 32 + ofx;\n        }\n        this.weapon.draw(this.weapon.ax, this.weapon.ay, 13, this.index);\n      }else {\n        this.img.draw(this.pon.ax, this.pon.ay, 12, this.index);\n        if(this.index > 2){\n          this.weapon.ax = this.pon.x - 0 + ofx;\n        }\n        this.weapon.draw(this.weapon.ax, this.weapon.ay, 12, this.index);\n      }\n    break;\n    case \"attack_b_f\":\n      if(this.direct==\"left\"){\n        this.img.draw(this.pon.ax, this.pon.ay, 15, this.index);\n        this.weapon.draw(this.weapon.ax, this.weapon.ay, 15, this.index);\n      }else {\n        this.img.draw(this.pon.ax, this.pon.ay, 14, this.index);\n        this.weapon.draw(this.weapon.ax, this.weapon.ay, 14, this.index);\n      }\n    break;\n\n    case \"damaged\":\n      if(time%2==0){\n        if(this.direct==\"left\"){\n          this.img.draw(this.pon.ax, this.pon.ay, 17, this.index);\n          this.weapon.draw(this.weapon.ax, this.weapon.ay, 1, this.index);\n        }else {\n          this.img.draw(this.pon.ax, this.pon.ay, 16, this.index);\n          this.weapon.draw(this.weapon.ax, this.weapon.ay, 0, this.index);\n        }\n      }\n    break;\n  }\n     if(this.eft.flag)this.eft.draw(ofx, ofy);\n     for(var i=0;i<PARTICLE_NUM;i++){\n          if(this.ptcl[i].flag)this.ptcl[i].draw(ofx, ofy);\n     }\n}\n\nfunction plWeapon(){\n  this.pon = new point();\n  this.flag = false;\n}\n\nplWeapon.prototype = {\n  init: function(){\n    this.img = new sprite(ctx, \"plWeapon01.png\");\n    this.img.init(64,64,64,64);\n    this.index = 0;\n    this.flag = true;\n    this.ax = this.ay = 0;\n  },\n  draw: function(ax, ay, line, index){\n    this.img.draw(ax, ay, line, index);\n  }\n}\n\n\nfunction plEffect(){\n  this.pon = new point();\n  this.flag = false;\n}\n\nplEffect.prototype.init = function(state){\n  this.pon.x = -100;\n  this.pon.y = -100;\n  this.type = state\n  switch(this.type){\n    case \"attack_a\":\n      this.w = 64;\n      this.h = 32;\n      this.pon.ofx = 0;\n      this.pon.ofy = 32;\n      this.vx = 20;\n      this.vy = 0;\n      this.img = new sprite(ctx, \"plEffect02.png\");\n      this.img.init(64,64,64,64);\n      this.pow = 4;\n    break;\n    case \"attack_b\":\n      this.w = 64;\n      this.h = 32;\n      this.pon.ofx = 0;\n      this.pon.ofy = 32;\n      this.vx = 20;\n      this.vy = 0;\n      this.img = new sprite(ctx, \"plEffect02.png\");\n      this.img.init(64,64,64,64);\n     this.pow = 4;\n    break;\n    case \"attack_b_f\":\n      this.w = 64;\n      this.h = 64;\n      this.pon.ofx = 0;\n      this.pon.ofy = 0;\n      this.vx = 0;\n      this.vy = 0;\n      this.img = new sprite(ctx, \"plEffect02.png\");\n      this.img.init(64,64,64,64);\n      this.pow = 4;\n    break;\n  }\n  this.index = 0;\n  this.duration = 0;\n  this.flag = true;\n};\n\nplEffect.prototype.update = function(prx, pry, dir){\n  this.direct = dir;\n  switch(this.type){\n    case \"attack_a\":\n      this.pon.y = pry;\n      if(this.direct==\"left\"){\n        this.pon.x = prx - 13;\n      }else {\n        this.pon.x = prx - 13;\n      }\n      if(this.index > 4)this.flag = false;\n    break;\n    case \"attack_b\":\n      this.pon.y = pry;\n      if(this.direct==\"left\"){\n        this.pon.x = prx - 64;\n      }else {\n        this.pon.x = prx + 32;\n      }\n      if(this.index > 4)this.flag = false;\n    break;\n    case \"attack_b_f\":\n      this.pon.y = pry;\n      if(this.direct==\"left\"){\n        this.pon.x = prx - 16;\n      }else {\n        this.pon.x = prx - 16;\n      }\n      if(this.index > 3)this.flag = false;\n    break;\n  }\n\n  this.duration++;\n};\n\nplEffect.prototype.draw = function(ofx, ofy){\n  this.pon.ax = this.pon.x + ofx;\n  this.pon.ay = this.pon.y + ofy;\n  switch(this.type){\n     case \"attack_a\":\n      if(this.direct==\"left\")this.img.draw(this.pon.ax, this.pon.ay, 1, this.index);\n      else this.img.draw(this.pon.ax, this.pon.ay, 0, this.index);\n     break\n     case \"attack_b\":\n      if(this.direct==\"left\")this.img.draw(this.pon.ax, this.pon.ay, 3, this.index);\n      else this.img.draw(this.pon.ax, this.pon.ay, 2, this.index);\n     break\n    case \"attack_b_f\":\n      if(this.direct==\"left\")this.img.draw(this.pon.ax, this.pon.ay, 5, this.index);\n      else this.img.draw(this.pon.ax, this.pon.ay, 4, this.index);\n    break;\n    default:\n  }\n  this.index++;\n};",
+			"file": "player.js",
+			"file_size": 16209,
+			"file_write_time": 131158324021754015,
+			"settings":
+			{
+				"buffer_size": 16169,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "saro.js",
+			"settings":
+			{
+				"buffer_size": 6911,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "enemy.js",
+			"settings":
+			{
+				"buffer_size": 4676,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "particles.js",
+			"settings":
+			{
+				"buffer_size": 2572,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "mapObjects.js",
+			"settings":
+			{
+				"buffer_size": 5493,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "gFunction.js",
+			"settings":
+			{
+				"buffer_size": 11983,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "box.js",
+			"settings":
+			{
+				"buffer_size": 2859,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "stage_info.json",
+			"settings":
+			{
+				"buffer_size": 24519,
+				"line_ending": "Unix"
+			}
+		}
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 980.0,
+		"last_filter": "inst",
+		"selected_items":
+		[
+			[
+				"inst",
+				"Package Control: Install Package"
+			]
+		],
+		"width": 1040.0
+	},
+	"console":
+	{
+		"height": 128.0,
+		"history":
+		[
+			"inst",
+			"package controll: install package",
+			"import urllib.request,os,hashlib; h = '2915d1851351e5ee549c20394736b442' + '8bc59f460fa1548d1514676163dafc88'; pf = 'Package Control.sublime-package'; ipp = sublime.installed_packages_path(); urllib.request.install_opener( urllib.request.build_opener( urllib.request.ProxyHandler()) ); by = urllib.request.urlopen( 'http://packagecontrol.io/' + pf.replace(' ', '%20')).read(); dh = hashlib.sha256(by).hexdigest(); print('Error validating download (got %s instead of %s), please try manual install' % (dh, h)) if dh != h else open(os.path.join( ipp, pf), 'wb' ).write(by) "
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"expanded_folders":
+	[
+		"/X/localhost/work(6)",
+		"/C/www/work(6)"
+	],
+	"file_history":
+	[
+		"/X/localhost/work(6)/Start.html",
+		"/X/localhost/work(5)/stick_act.js",
+		"/X/localhost/work(5)/js/stage_info.json",
+		"/X/localhost/work(6)/information.js",
+		"/X/localhost/work(6)/mapObjects.js",
+		"/X/localhost/work(6)/particles.js",
+		"/C/www/work(6)/saro.js",
+		"/C/www/work(5)/stick_act.js",
+		"/C/www/work/stick_act.js",
+		"/C/www/work(6)/frontline.sublime-project",
+		"/C/www/blogtest/header.php",
+		"/C/www/blogtest/functions.php",
+		"/C/Users/mycon/AppData/Roaming/Sublime Text 3/Packages/User/Preferences.sublime-settings",
+		"/C/Users/mycon/Desktop/serverval.php",
+		"/C/www/work(5)/js/stage_info.json",
+		"/C/www/blogtest/materials/attachment.js",
+		"/C/www/blogtest/materials/color.css",
+		"/C/Users/mycon/AppData/Roaming/Sublime Text 3/Packages/User/JavaScript/JavaScript.sublime-settings",
+		"/C/www/blogtest/blog.php",
+		"/C/Users/mycon/AppData/Roaming/Sublime Text 3/Packages/Default/Preferences.sublime-settings",
+		"/C/Users/mycon/AppData/Roaming/Sublime Text 3/Packages/User/JavaScript.sublime-settings",
+		"/C/Users/mycon/AppData/Roaming/Sublime Text 3/Packages/JavaScript/JavaScript.sublime-settings",
+		"/C/www/work(6)/player.js",
+		"/C/Users/mycon/Desktop/SYSTEM.hsp",
+		"/C/Users/mycon/Desktop/projectN/bin/a.hsp",
+		"/C/Users/mycon/Desktop/cs2d_1002_win/SYSTEM.c",
+		"/C/www/work(6)/tool/makeSprite.html",
+		"/C/www/work(6)/gFunction.js",
+		"/C/www/work(6)/box.js",
+		"/C/www/blogtest/index.php",
+		"/C/www/blogtest/about.php",
+		"/C/www/work/js/stage_info_bb.json",
+		"/C/www/work/js/stage_info_bk.json",
+		"/C/Users/mycon/Dropbox/work(5)/stick_act.js",
+		"/C/www/work(6)/stage_info.json",
+		"/C/www/work(6)/tool/MakeMap.html",
+		"/C/www/work(6)/enemy.js",
+		"/C/www/blogtest/footer.php",
+		"/C/www/work(5)/stick_act_.js",
+		"/C/www/work/2.html",
+		"/C/www/pdo.php",
+		"/C/www/work(6)/Start.html",
+		"/C/www/work(6)/mapObjects.js",
+		"/C/www/work(6)/information.js",
+		"/C/www/work(6)/tool/makeSprite2.html",
+		"/C/Users/mycon/Desktop/SYSTEM.c",
+		"/C/Users/mycon/Desktop/projectN/SYSTEM.hsp"
+	],
+	"find":
+	{
+		"height": 46.0
+	},
+	"find_in_files":
+	{
+		"height": 0.0,
+		"where_history":
+		[
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"inv",
+			"point",
+			"this.vx0",
+			"conso",
+			"consol",
+			"console",
+			"0",
+			"}\n",
+			"this.vx",
+			"ddd",
+			"breath",
+			"this.breath",
+			"this.posFlg",
+			"drawMap",
+			"cMap",
+			"bMap",
+			"cmap",
+			"cMap",
+			"decFlg",
+			"64",
+			"32",
+			"PARTICLE_NUM",
+			"this",
+			");\n",
+			"atkPush",
+			");\n",
+			"this.vx",
+			"this.pt",
+			"\"){\n",
+			"partic",
+			"prticle",
+			"particle",
+			"rand",
+			"this.atk_interval",
+			"wet",
+			"max",
+			"5",
+			"map = ",
+			"var map",
+			"console",
+			"map",
+			"readJson",
+			"font-weight",
+			"h1",
+			";\n",
+			"て",
+			"てｓｔ",
+			"{\n",
+			"canvas",
+			"#image",
+			"img",
+			");\n",
+			"0px",
+			"float",
+			"this.vy",
+			"MAX_LENGTH",
+			"setBoxWeight",
+			");\n",
+			"this.index",
+			"-20",
+			"drawMap",
+			"}\n",
+			"drawAreaY",
+			"drawAreaX",
+			"fillrect"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+			"this.decFlg",
+			"48",
+			"64",
+			"this.interval",
+			"animFrame",
+			"makeMap",
+			"textAreaY",
+			"textAreaX",
+			"textAreaY"
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"selected": 0,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "player.js",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 16169,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								908,
+								908
+							]
+						],
+						"settings":
+						{
+							"bracket_highlighter.busy": false,
+							"bracket_highlighter.locations":
+							{
+								"close":
+								{
+									"1":
+									[
+										7841,
+										7842
+									]
+								},
+								"icon":
+								{
+									"1":
+									[
+										"Packages/BracketHighlighter/icons/curly_bracket.png",
+										"brackethighlighter.default"
+									]
+								},
+								"open":
+								{
+									"1":
+									[
+										7811,
+										7812
+									]
+								},
+								"unmatched":
+								{
+								}
+							},
+							"bracket_highlighter.regions":
+							[
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content"
+							],
+							"syntax": "Packages/JavaScript/JavaScript.sublime-syntax",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "saro.js",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 6911,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								2795,
+								2795
+							]
+						],
+						"settings":
+						{
+							"bracket_highlighter.busy": false,
+							"bracket_highlighter.locations":
+							{
+								"close":
+								{
+								},
+								"icon":
+								{
+								},
+								"open":
+								{
+								},
+								"unmatched":
+								{
+								}
+							},
+							"bracket_highlighter.regions":
+							[
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content"
+							],
+							"syntax": "Packages/JavaScript/JavaScript.sublime-syntax",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 4674.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 6,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "enemy.js",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 4676,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								3897,
+								3897
+							]
+						],
+						"settings":
+						{
+							"bracket_highlighter.busy": false,
+							"bracket_highlighter.locations":
+							{
+								"close":
+								{
+									"1":
+									[
+										3541,
+										3542
+									]
+								},
+								"icon":
+								{
+									"1":
+									[
+										"Packages/BracketHighlighter/icons/round_bracket.png",
+										"brackethighlighter.default"
+									]
+								},
+								"open":
+								{
+									"1":
+									[
+										3522,
+										3523
+									]
+								},
+								"unmatched":
+								{
+								}
+							},
+							"bracket_highlighter.regions":
+							[
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content"
+							],
+							"syntax": "Packages/JavaScript/JavaScript.sublime-syntax",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 5261.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 3,
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "particles.js",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 2572,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								788,
+								788
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 2130.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 4,
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "mapObjects.js",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 5493,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								3187,
+								3187
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.sublime-syntax",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 3156.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 5,
+					"type": "text"
+				},
+				{
+					"buffer": 5,
+					"file": "gFunction.js",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 11983,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								5656,
+								5656
+							]
+						],
+						"settings":
+						{
+							"bracket_highlighter.busy": false,
+							"bracket_highlighter.locations":
+							{
+								"close":
+								{
+									"1":
+									[
+										6940,
+										6941
+									]
+								},
+								"icon":
+								{
+									"1":
+									[
+										"Packages/BracketHighlighter/icons/round_bracket.png",
+										"brackethighlighter.default"
+									]
+								},
+								"open":
+								{
+									"1":
+									[
+										6935,
+										6936
+									]
+								},
+								"unmatched":
+								{
+								}
+							},
+							"bracket_highlighter.regions":
+							[
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content"
+							],
+							"syntax": "Packages/JavaScript/JavaScript.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 7655.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 6,
+					"file": "box.js",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 2859,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								2171,
+								2171
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.sublime-syntax",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 228.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 7,
+					"file": "stage_info.json",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 24519,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								19241,
+								19242
+							],
+							[
+								19493,
+								19494
+							],
+							[
+								19746,
+								19747
+							],
+							[
+								19999,
+								20000
+							]
+						],
+						"settings":
+						{
+							"bracket_highlighter.busy": false,
+							"bracket_highlighter.locations":
+							{
+								"close":
+								{
+								},
+								"icon":
+								{
+								},
+								"open":
+								{
+								},
+								"unmatched":
+								{
+								}
+							},
+							"bracket_highlighter.regions":
+							[
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content"
+							],
+							"syntax": "Packages/JavaScript/JSON.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 1482.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 7,
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 46.0
+	},
+	"input":
+	{
+		"height": 0.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"pinned_build_system": "",
+	"project": "frontline.sublime-project",
+	"replace":
+	{
+		"height": 88.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"",
+				"mapObjects.js"
+			]
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 500.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"",
+				"C:\\www\\work(6)\\frontline.sublime-project"
+			]
+		],
+		"width": 380.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": true,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 426.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}
