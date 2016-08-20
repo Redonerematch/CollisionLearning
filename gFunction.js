@@ -1,3 +1,100 @@
+//---------------------
+function point(){
+  this.x = 0;
+  this.y = 0;
+  this.ofx = 0;
+  this.ofy = 0;
+  this.ax = 0;
+  this.ay = 0;
+  this.lx = 0;
+  this.ly = 0;
+}
+
+//---------------------
+//----------------------マップから配列を返す----------------------
+var MAX_LENGTH = 11;
+var wall = [30,31,32,33,34,35,36,37];
+var ladder = [60,61,62,63];
+var water = [70,71,72,73];
+var platform = [65,66,67];
+function colVertical(obj){
+  var index = -1;
+
+  var left = obj.pon.x + obj.pon.ofx;
+  var right = obj.pon.x + obj.pon.ofx + obj.w;
+  var top = obj.pon.y + obj.pon.ofy;
+  var bottom = obj.pon.y + obj.pon.ofy + obj.h;
+
+    //その他　変形チップ
+    if(obj.vy>=0){
+        for(var i=0;i<platform.length;i++){
+            if(col_map(left + 5, bottom)==platform[i]||col_map(right - 5, bottom)==platform[i]){
+                var btm_comp = obj.pon.y - Math.floor((obj.pon.y)/32)*32
+                if(btm_comp < 12)obj.doHitCorrection("platform", btm_comp, "map");
+            }
+        }
+    }
+    if(obj.name=="player"){
+        for(var i=0;i<ladder.length;i++){
+            if(col_map(left + 15, top)==ladder[i]&&col_map(right - 15, top)==ladder[i]){
+            obj.setPosFlg("ladder");
+        }
+    }
+    for(var i=0;i<water.length;i++){
+            if(col_map(left , bottom - 10)==water[i]||col_map(right, bottom - 10)==water[i]){
+              obj.setPosFlg("water");
+            }
+        }
+    }
+    for(var i=0;i<wall.length;i++){
+        //縦補正
+        if(obj.vy >= 0){
+            if((col_map(left, bottom)==wall[i]||col_map(right , bottom)==wall[i])){   //床に触れている
+                var lft_comp = -(obj.pon.x - Math.ceil((obj.pon.x + obj.vx)/32)*32);
+                var btm_comp = obj.pon.y - Math.trunc((obj.pon.y + obj.vy)/32)*32
+                obj.doHitCorrection("bottom", btm_comp, "map");
+                //めり込みは速度0でないなら縦の補正を無視する
+                if(btm_comp != 0){
+                    if(col_map(left - (obj.vx0+1), top + 1)==wall[i]||col_map(left - (obj.vx0+1), bottom - 5)==wall[i] ||
+                        col_map(right + (obj.vx0), top + 1)==wall[i]||col_map(right + (obj.vx0), bottom - 5)==wall[i]){
+                        //obj.doHitCorrection("bottom", btm_comp, "map");
+                        continue;
+                    }
+                }
+            }
+        }else {
+            if(col_map(left, top + obj.vy)==wall[i]||col_map(right , top + obj.vy)==wall[i]){   //上側の判定
+                var comp = obj.vx;
+                obj.doHitCorrection("top",comp, "map");
+            }
+        }
+        //横補正
+        if(obj.vx <= 0){
+            if(col_map(left - (obj.vx0), top + 1)==wall[i]||col_map(left - (obj.vx0), bottom - 2)==wall[i]){
+                //var lft_comp = -(obj.pon.x - Math.ceil((obj.pon.x + obj.vx)/32)*32);
+                obj.doHitCorrection("left", obj.vx, "map");
+            }
+        }else {
+            if(col_map(right + (obj.vx0), top + 1)==wall[i]||col_map(right + (obj.vx0), bottom - 5)==wall[i]){
+                //var rgt_comp = (obj.pon.x - Math.floor((obj.pon.x + obj.vx)/32)*32);
+                obj.doHitCorrection("right",obj.vx, "map");
+            }
+        }
+    }
+
+    return index;
+}
+
+
+function col_map(x, y){
+    //表示領域外を例外として処理
+    var mArray = mapArray["layer1"]
+    try{
+        return mArray[Math.trunc(y/32)][Math.trunc(x/32)];
+    }catch(e){
+        return 'undefined';
+    }
+}
 //---------------------画像取得用関数----------------------
 
 var getImages = function(){
@@ -158,103 +255,7 @@ function readJson(){
    data.send(null);
 }
 
-//---------------------
-function point(){
-  this.x = 0;
-  this.y = 0;
-  this.ofx = 0;
-  this.ofy = 0;
-  this.ax = 0;
-  this.ay = 0;
-  this.lx = 0;
-  this.ly = 0;
-}
 
-//---------------------
-//----------------------マップから配列を返す----------------------
-var MAX_LENGTH = 11;
-var wall = [30,31,32,33,34,35,36,37];
-var ladder = [60,61,62,63];
-var water = [70,71,72,73];
-var platform = [65,66,67];
-function colVertical(obj){
-  var index = -1;
-
-  var left = obj.pon.x + obj.pon.ofx;
-  var right = obj.pon.x + obj.pon.ofx + obj.w;
-  var top = obj.pon.y + obj.pon.ofy;
-  var bottom = obj.pon.y + obj.pon.ofy + obj.h;
-
-    //その他　変形チップ
-    if(obj.vy>=0){
-        for(var i=0;i<platform.length;i++){
-            if(col_map(left + 5, bottom)==platform[i]||col_map(right - 5, bottom)==platform[i]){
-                var btm_comp = obj.pon.y - Math.floor((obj.pon.y)/32)*32
-                if(btm_comp < 12)obj.doHitCorrection("platform", btm_comp, "map");
-            }
-        }
-    }
-    if(obj.name=="player"){
-        for(var i=0;i<ladder.length;i++){
-            if(col_map(left + 15, top)==ladder[i]&&col_map(right - 15, top)==ladder[i]){
-            obj.setPosFlg("ladder");
-        }
-    }
-    for(var i=0;i<water.length;i++){
-            if(col_map(left , bottom - 10)==water[i]||col_map(right, bottom - 10)==water[i]){
-              obj.setPosFlg("water");
-            }
-        }
-    }
-    for(var i=0;i<wall.length;i++){
-        //縦補正
-        if(obj.vy >= 0){
-            if((col_map(left, bottom)==wall[i]||col_map(right , bottom)==wall[i])){   //床に触れている
-                var lft_comp = -(obj.pon.x - Math.ceil((obj.pon.x + obj.vx)/32)*32);
-                var btm_comp = obj.pon.y - Math.trunc((obj.pon.y + obj.vy)/32)*32
-                obj.doHitCorrection("bottom", btm_comp, "map");
-                //めり込みは速度0でないなら縦の補正を無視する
-                if(btm_comp != 0){
-                    if(col_map(left - (obj.vx0+1), top + 1)==wall[i]||col_map(left - (obj.vx0+1), bottom - 5)==wall[i] ||
-                        col_map(right + (obj.vx0), top + 1)==wall[i]||col_map(right + (obj.vx0), bottom - 5)==wall[i]){
-                        //obj.doHitCorrection("bottom", btm_comp, "map");
-                        continue;
-                    }
-                }
-            }
-        }else {
-            if(col_map(left, top + obj.vy)==wall[i]||col_map(right , top + obj.vy)==wall[i]){   //上側の判定
-                var comp = obj.vx;
-                obj.doHitCorrection("top",comp, "map");
-            }
-        }
-        //横補正
-        if(obj.vx <= 0){
-            if(col_map(left - (obj.vx0), top + 1)==wall[i]||col_map(left - (obj.vx0), bottom - 2)==wall[i]){
-                //var lft_comp = -(obj.pon.x - Math.ceil((obj.pon.x + obj.vx)/32)*32);
-                obj.doHitCorrection("left", obj.vx, "map");
-            }
-        }else {
-            if(col_map(right + (obj.vx0), top + 1)==wall[i]||col_map(right + (obj.vx0), bottom - 5)==wall[i]){
-                //var rgt_comp = (obj.pon.x - Math.floor((obj.pon.x + obj.vx)/32)*32);
-                obj.doHitCorrection("right",obj.vx, "map");
-            }
-        }
-    }
-
-    return index;
-}
-
-
-function col_map(x, y){
-    //表示領域外を例外として処理
-    var mArray = mapArray["layer1"]
-    try{
-        return mArray[Math.trunc(y/32)][Math.trunc(x/32)];
-    }catch(e){
-        return 'undefined';
-    }
-}
 //---------------------あたり判定用関数-----------------------
 //
 //ポイント:移動している方向によってあたり判定を取らない！！
